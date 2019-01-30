@@ -26,9 +26,10 @@ app.set('Reg', config.secret_Reg)
 
 
 client.on('connect', function () {
-  client.subscribe('update', function (err) {});
   client.subscribe('Reg-sever', function (err) {});
-  client.subscribe('Req-sever', function (err) {});
+  client.subscribe('Req-create', function (err) {});
+  client.subscribe('Req-update', function (err) {});
+  client.subscribe('Req-delete', function (err) {});
 })
  
 client.on('message', function (topic, message) {
@@ -61,7 +62,7 @@ client.on('message', function (topic, message) {
                 // obj[i].name is the matched result
                 
                  var token = jwt.sign(DevReg, app.get('Req'), {})///用req來加密
-                 client.publish('Reg-client', token.toString())
+                 client.publish(DevReg.name+'token', token.toString())
                  console.log("DVE verify success")
                  pass = true;
                   
@@ -84,43 +85,104 @@ client.on('message', function (topic, message) {
         message: 'token error.'})
       }
     
-    }else if(topic == 'Req-sever'){
-     jwt.verify(message.toString(), app.get('Req'), function (err, NewUserReq){
-      if (err) {
-        console.log({success: false, message: 'Failed to authenticate token.'})
-      } else {
-        console.log("----------------verify success-------------------------.")
-       console.log("New user name : "+NewUserReq.name)
-       console.log("New user password : "+NewUserReq.password)
-       console.log("req token : "+NewUserReq.token)
-       jwt.verify(NewUserReq.token, app.get('Req'), function (err, decoded){
-        if (err) {
-          console.log({success: false, message: '----------------no-Reg Dev--------------------'})
+    }else if(topic == 'Req-create'){
+      jwt.verify(message.toString(), app.get('Req'), function (err, NewUserReq){
+       if (err) {
+         console.log({success: false, message: 'Failed to authenticate token.'})
+       } else {
+         console.log("----------------verify success-------------------------.")
+         console.log("New user name : "+NewUserReq.name)
+         console.log("New user password : "+NewUserReq.password)
+         console.log("req token : "+NewUserReq.token)
+         jwt.verify(NewUserReq.token, app.get('Req'), function (err, decoded){
+         if (err) {
+           console.log({success: false, message: '----------------no-Reg Dev--------------------'})
+          } else {
+           
+           var  addSql = 'INSERT INTO user(id,name,password) VALUES(0,?,?)';
+           var  addSqlParams = [NewUserReq.name, NewUserReq.password];
+           
+           Usermanger.query(addSql,addSqlParams,function (err, result) {
+            if(err){
+            console.log('[INSERT ERROR] - ',err.message);
+              return;
+            }else{       
+               console.log('--------------------------INSERT----------------------------');      
+               console.log('INSERT ID:',result);        
+               console.log('--------------------------Finish-----------------------------\n\n');  
+               ///message is Buffer    
+               
+               
+               
+                }
+             }) 
+           }
+        })
+       }
+     })
+   }else if(topic == 'Req-update'){
+    jwt.verify(message.toString(), app.get('Req'), function (err, updateReq){
+     if (err) {
+       console.log({success: false, message: 'Failed to authenticate token.'})
+     } else {
+       console.log("----------------verify success-------------------------.")
+       console.log("update user ID : "+updateReq.id)
+       console.log("update user name : "+updateReq.name)
+       console.log("update user password : "+updateReq.password)
+       console.log("req token : "+updateReq.token)
+       jwt.verify(updateReq.token, app.get('Req'), function (err, decoded){
+       if (err) {
+         console.log({success: false, message: '----------------no-Reg Dev--------------------'})
         } else {
-          
-          var  addSql = 'INSERT INTO user(id,name,password) VALUES(0,?,?)';
-          var  addSqlParams = [NewUserReq.name, NewUserReq.password];
-          
-          Usermanger.query(addSql,addSqlParams,function (err, result) {
-           if(err){
-           console.log('[INSERT ERROR] - ',err.message);
-             return;
-           }else{       
-              console.log('--------------------------INSERT----------------------------');
-              console.log('INSERT ID:',result.insertId);        
-              console.log('INSERT ID:',result);        
-              console.log('--------------------------Finish-----------------------------\n\n');  
-              ///message is Buffer    
-              
-              
-              
-               }
-            })
-          
-        }
-       })
-      }
-
-    })
+         
+          var modSql = 'UPDATE user SET name = ?,password = ? WHERE Id = ?';
+          var modSqlParams = [updateReq.name, updateReq.password,updateReq.id];
+         
+         Usermanger.query(modSql,modSqlParams,function (err, result) {
+          if(err){
+          console.log('[UPDATE ERROR] - ',err.message);
+            return;
+          }else{       
+             console.log('--------------------------Update----------------------------');    
+             console.log('Update ID:',result);        
+             console.log('--------------------------Finish-----------------------------\n\n');  
+             
+            }
+          }) 
+         }
+      })
+     }
+   })
+  }else if(topic == 'Req-delete'){
+    jwt.verify(message.toString(), app.get('Req'), function (err, deleteReq){
+     if (err) {
+       console.log({success: false, message: 'Failed to authenticate token.'})
+     } else {
+       console.log("----------------verify success-------------------------.")
+       console.log("delete user ID : "+deleteReq.id)
+       console.log("req token : "+deleteReq.token)
+       jwt.verify(deleteReq.token, app.get('Req'), function (err, decoded){
+       if (err) {
+         console.log({success: false, message: '----------------no-Reg Dev--------------------'})
+        } else {
+         
+          var delSql = 'DELETE FROM user where id=?';
+          var delSqlParams = [deleteReq.id];
+         
+         Usermanger.query(delSql,delSqlParams,function (err, result) {
+          if(err){
+          console.log('[DELETE ERROR] - ',err.message);
+            return;
+          }else{       
+             console.log('--------------------------DELETE----------------------------');      
+             console.log('DELETE ID:',result);        
+             console.log('--------------------------Finish-----------------------------\n\n');  
+             
+            }
+          }) 
+         }
+      })
+     }
+   })
   }
 })
