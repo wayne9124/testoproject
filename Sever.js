@@ -54,6 +54,7 @@ client.on('message', function (topic, message) {
            }
            var string=JSON.stringify(result); 
            var data = JSON.parse(string) // iterate over each element in the array
+           var pass= false;
            for (var i = 0; i < data.length; i++){ // 資料庫查詢結果比對
               if (data[i].name == DevReg.name && data[i].password == DevReg.password){
                 // we found it
@@ -62,19 +63,19 @@ client.on('message', function (topic, message) {
                  var token = jwt.sign(DevReg, app.get('Req'), {})///用req來加密
                  client.publish('Reg-client', token.toString())
                  console.log("DVE verify success")
+                 pass = true;
                   
-                }else if(i == data.length){
-                console.log('--------------------------Error-----------------------------')
-                console.log("User or PassWord wrong");
-                client.publish(DevReg.name+'ErrorReport', "Dev "+DevReg.name+" : User or PassWord wrong")
-                console.log('------------------------------------------------------------\n\n');  
                 }
               }
+             if(pass==false){
+              console.log('--------------------------Error-----------------------------')
+              console.log("User or PassWord wrong");
+              client.publish(DevReg.name+'ErrorReport', "Dev "+DevReg.name+" : User or PassWord wrong")
+              console.log('------------------------------------------------------------\n\n');  
+
+             }
 
            });
-          
-         
-        
           } 
         })
       }else{
