@@ -9,8 +9,8 @@ var config = require('./config')
 var client  = mqtt.connect('mqtt://127.0.0.1:1883')
 var dve=({
     "id": null,
-    "name": "three",
-    "password": "147258"
+    "name": "two",
+    "password": "456789"
 })
 
 app.set('Req', config.secret_Req)
@@ -22,7 +22,7 @@ client.on('connect', function () {
     client.subscribe('Reg-client', function (err) {});///接收token
     client.subscribe(locatname.name+'ErrorReport', function (err) {})
     var Regpack = jwt.sign(dve, app.get('Reg'), {}) ///打包註冊資料
-    client.publish('Reg-sever', Regpack.toString())///推送註冊資料(加密過的) 
+    client.publish('Reg-sever', Regpack.toString())///推送註冊資料(加密過的) 2
     
 })
 
@@ -32,7 +32,7 @@ client.on('message', function (topic, message){///收到回應
         console.log(tokenClinet)
         var Newuser= ({
             "id": null,
-            "name": "bird",
+            "name": "FISH",
             "password": "456789",
             "token" : tokenClinet
         })
