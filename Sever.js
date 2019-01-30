@@ -33,43 +33,89 @@ client.on('connect', function () {
  
 client.on('message', function (topic, message) {
   if(topic == 'Reg-sever'){
+    console.log('---------------Incoming DevReg information------------------')
     console.log(message.toString())
     console.log(topic.toString())
     if (message) {//有訊息的話，確認設備身分
-      jwt.verify(message.toString(), app.get('Reg'), function (err, decoded1) {
+      jwt.verify(message.toString(), app.get('Reg'), function (err, DevReg) {
         if (err) {
-          console.log({success: false, message: 'Failed to authenticate token.'})
-        } else {
-         console.log("success: true")
-         console.log(decoded1)
-         console.log(decoded1.name)
-         console.log(decoded1.password)
-         ///DB驗證開始
-         ///DB驗證完成
-         var token = jwt.sign(decoded1, app.get('Req'), {})///用req來加密
-         client.publish('Reg-client', token.toString())
-        }
-      })
-     } else {
+          console.log({success: false, message: '-----------------------Failed to authenticate token.-----------------\n\n.'})
+          } else {//查
+          console.log("Dev name : "+DevReg.name)
+          console.log("Dev password : "+DevReg.password)
+          console.log("------------------------------------------------------------.")
+
+          var  sql = 'select name, password from dev';
+
+          DevManger.query(sql,function (err, result) {///資料庫查詢
+           if(err){
+            console.log('[SELECT ERROR] - ',err.message);
+            return;
+           }
+           var string=JSON.stringify(result); 
+           var data = JSON.parse(string) // iterate over each element in the array
+           for (var i = 0; i < data.length; i++){ // 資料庫查詢結果比對
+              if (data[i].name == DevReg.name && data[i].password == DevReg.password){
+                // we found it
+                // obj[i].name is the matched result
+                
+                 var token = jwt.sign(DevReg, app.get('Req'), {})///用req來加密
+                 client.publish('Reg-client', token.toString())
+                 console.log("DVE verify success")
+                  
+                }else if(i == data.length){
+                console.log('--------------------------Error-----------------------------')
+                console.log("User or PassWord wrong");
+                client.publish(DevReg.name+'ErrorReport', "Dev "+DevReg.name+" : User or PassWord wrong")
+                console.log('------------------------------------------------------------\n\n');  
+                }
+              }
+
+           });
+          
+         
+        
+          } 
+        })
+      }else{
         console.log({
         success: false,
-        message: 'token error.'})}
-  }else if(topic == 'Req-sever'){
-    jwt.verify(message.toString(), app.get('Req'), function (err, decoded2){
+        message: 'token error.'})
+      }
+    
+    }else if(topic == 'Req-sever'){
+     jwt.verify(message.toString(), app.get('Req'), function (err, NewUserReq){
       if (err) {
         console.log({success: false, message: 'Failed to authenticate token.'})
       } else {
-       console.log("success: true")
-       console.log(decoded2)
-       console.log(decoded2.name)
-       console.log(decoded2.password)
-       console.log(decoded2.token)
-       jwt.verify(decoded2.token, app.get('Req'), function (err, decoded){
+        console.log("----------------verify success-------------------------.")
+       console.log("New user name : "+NewUserReq.name)
+       console.log("New user password : "+NewUserReq.password)
+       console.log("req token : "+NewUserReq.token)
+       jwt.verify(NewUserReq.token, app.get('Req'), function (err, decoded){
         if (err) {
-          console.log({success: false, message: 'Failed to authenticate token.'})
+          console.log({success: false, message: '----------------no-Reg Dev--------------------'})
         } else {
-          console.log("DVE verify success: true")
-          console.log("DB ACTIVE star")
+          
+          var  addSql = 'INSERT INTO user(id,name,password) VALUES(0,?,?)';
+          var  addSqlParams = [NewUserReq.name, NewUserReq.password];
+          
+          Usermanger.query(addSql,addSqlParams,function (err, result) {
+           if(err){
+           console.log('[INSERT ERROR] - ',err.message);
+             return;
+           }else{       
+              console.log('--------------------------INSERT----------------------------');
+              console.log('INSERT ID:',result.insertId);        
+              console.log('INSERT ID:',result);        
+              console.log('--------------------------Finish-----------------------------\n\n');  
+              ///message is Buffer    
+              
+              
+              
+               }
+            })
+          
         }
        })
       }
