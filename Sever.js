@@ -4,7 +4,7 @@ var jwt = require('jsonwebtoken')
 var express = require('express');
 var app = express();
 var mysql = require('mysql');
-
+var moment= require('moment');
 
 
 var config = require('./config')
@@ -21,6 +21,7 @@ var DevManger = mysql.createConnection({
     password: '123456',
     database: 'dev'
   });
+var mysqlTimestamp = moment(Date.now()).format('YYYY-MM-DD HH:mm:ss');
 app.set('Req', config.secret_Req)
 app.set('Reg', config.secret_Reg)
 
@@ -30,6 +31,7 @@ client.on('connect', function () {
   client.subscribe('Req-create', function (err) {});
   client.subscribe('Req-update', function (err) {});
   client.subscribe('Req-delete', function (err) {});
+  
 })
  
 client.on('message', function (topic, message) {
@@ -99,8 +101,8 @@ client.on('message', function (topic, message) {
            console.log({success: false, message: '----------------no-Reg Dev--------------------'})
           } else {
            
-           var  addSql = 'INSERT INTO user(id,name,password) VALUES(0,?,?)';
-           var  addSqlParams = [NewUserReq.name, NewUserReq.password];
+           var  addSql = 'INSERT INTO user(id,name,password,created_at,did,token) VALUES(0,?,?,?,?,?)';
+           var  addSqlParams = [NewUserReq.name, NewUserReq.password,mysqlTimestamp,decoded.name,NewUserReq.token];
            
            Usermanger.query(addSql,addSqlParams,function (err, result) {
             if(err){
@@ -135,8 +137,8 @@ client.on('message', function (topic, message) {
          console.log({success: false, message: '----------------no-Reg Dev--------------------'})
         } else {
          
-          var modSql = 'UPDATE user SET name = ?,password = ? WHERE Id = ?';
-          var modSqlParams = [updateReq.name, updateReq.password,updateReq.id];
+          var modSql = 'UPDATE user SET name = ?,password = ?,updated_at = ?,did= ?,token=? WHERE Id = ?';
+          var modSqlParams = [updateReq.name, updateReq.password,mysqlTimestamp,decoded.name,updateReq.token,updateReq.id];
          
          Usermanger.query(modSql,modSqlParams,function (err, result) {
           if(err){
