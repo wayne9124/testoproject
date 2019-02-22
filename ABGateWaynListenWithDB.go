@@ -15,16 +15,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/vmihailenco/msgpack"
 )
-
-type Dev struct {
-	UUID         string
-	Mac          string
-	Temperature  string
-	Humidity     string
-	Light        string
-	BatteryLevel string
-}
-
 func onMessageReceived(client MQTT.Client, message MQTT.Message) {
 	//fmt.Printf("Received message on topic: %s\nMessage: %s\n", message.Topic(), message.Payload())
 	fmt.Println(message.Topic())
