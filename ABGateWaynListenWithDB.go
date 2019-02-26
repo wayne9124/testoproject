@@ -15,11 +15,19 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/vmihailenco/msgpack"
 )
+
+type Dev struct {
+	Temperature  int
+	Humidity     string
+	Light        string
+	 
+}
+
 func onMessageReceived(client MQTT.Client, message MQTT.Message) {
 	//fmt.Printf("Received message on topic: %s\nMessage: %s\n", message.Topic(), message.Payload())
 	fmt.Println(message.Topic())
 	//fmt.Println(message.Payload())
-	//splitString := strings.Split(message.Topic(), "/") //Split by '/'
+	splitString := strings.Split(message.Topic(), "/") //Split by '/'
 	//var out map[string]interface{}
 	var out map[string]interface{}
 	err := msgpack.Unmarshal(message.Payload(), &out)
@@ -72,7 +80,7 @@ func onMessageReceived(client MQTT.Client, message MQTT.Message) {
 	for k, v := range devices {
 
 		if d := v[2:14]; d == "F4E9E6551BBC" || d == "DFBABEDA2FAF" {
-			{ //鎖定的裝置MAC
+			if l := len(v); l == 68 { //鎖定的裝置MAC
 				fmt.Sprint(k)
 				fmt.Printf("--------------Device[%s]--------------\n", v[2:14])
 				fmt.Printf("UUID = %s\n", v[26:30])
@@ -87,7 +95,7 @@ func onMessageReceived(client MQTT.Client, message MQTT.Message) {
 					panic(err.Error()) // Just for example purpose. You should use proper error handling instead of panic
 				} else {
 					result, err := db.Exec(
-						"REPLACE INTO AdvData(UUID,Mac, BatteryLv,  Temperature, Humidity, Light,Created_MID) VALUES (?,?,?,?,?,?,?)",
+						"REPLACE INTO AdvData(UUID,Mac, BatteryLv,  Temperature, Humidity, Light,Created_MID,GateWay) VALUES (?,?,?,?,?,?,?,?)",
 						v[26:30],
 						v[2:14],
 						toInt(v[54:56]),
@@ -95,6 +103,7 @@ func onMessageReceived(client MQTT.Client, message MQTT.Message) {
 						toInt(linkit(v[62:64], v[60:62]))/4,
 						toInt(linkit(v[66:68], v[64:66])),
 						out["mid"],
+						splitString[2],
 					)
 					if err != nil {
 						log.Fatal(err)
@@ -104,6 +113,8 @@ func onMessageReceived(client MQTT.Client, message MQTT.Message) {
 				}
 				defer db.Close()
 				///////////////////////////////////////////////////
+			} else {
+				fmt.Println("data err")
 			}
 		}
 	}
@@ -134,7 +145,7 @@ func main() {
 	//mqtt.ERROR = log.New(os.Stdout, "", 0)//顯錯誤訊息
 	hostname, _ := os.Hostname()
 	server := "34.217.228.207:1883"
-	topic := "/gw/april_brother/status"
+	topic := "/gw/+/status"
 	clientid := hostname + strconv.Itoa(time.Now().Second())
 	connOpts := MQTT.NewClientOptions().AddBroker(server).SetClientID(clientid).SetCleanSession(true)
 
