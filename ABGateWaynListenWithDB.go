@@ -79,8 +79,8 @@ func onMessageReceived(client MQTT.Client, message MQTT.Message) {
 	}
 	for k, v := range devices {
 
-		if d := v[2:14]; d == "F4E9E6551BBC" || d == "DFBABEDA2FAF" {
-			if l := len(v); l == 68 { //鎖定的裝置MAC
+		if d := v[2:14]; d == "F4E9E6551BBC" || d == "DFBABEDA2FAF" {//鎖定的裝置MAC
+			if l := len(v); l == 68 { //針對資料長度避免亂碼
 				fmt.Sprint(k)
 				fmt.Printf("--------------Device[%s]--------------\n", v[2:14])
 				fmt.Printf("UUID = %s\n", v[26:30])
